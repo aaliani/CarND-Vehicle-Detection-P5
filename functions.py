@@ -1,6 +1,7 @@
-#!/home/aqeel/anaconda3/envs/carnd/bin/python
+#!~/anaconda3/envs/carnd/bin/python
 
 from skimage.feature import hog
+from sklearn.preprocessing import StandardScaler
 import numpy as np
 import random
 import math
@@ -188,12 +189,10 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
     # Return list of feature vectors
     return features
 
-def search_windows(img, windows, clf, scaler, color_space='RGB', 
-                    spatial_size=(32, 32), hist_bins=32, 
-                    hist_range=(0, 256), orient=9, 
-                    pix_per_cell=8, cell_per_block=2, 
-                    hog_channel=0, spatial_feat=True, 
-                    hist_feat=True, hog_feat=True):
+def search_windows(img, windows, clf, scaler, color_space, spatial_size, 
+    histogram_bins, orientations, pix_per_cell, cell_per_block, hog_channels,
+    spatial_features, histogram_features, hog_features):
+  
     """Apply specified classificator to specified windows
     and returns hot windows - windows classified as holding interesting object
     Args:
@@ -221,11 +220,11 @@ def search_windows(img, windows, clf, scaler, color_space='RGB',
         test_img = cv2.resize(img[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64), interpolation=cv2.INTER_AREA)      
         #4) Extract features for that window using single_img_features()
         features = single_img_features(test_img, color_space=color_space, 
-                            spatial_size=spatial_size, hist_bins=hist_bins, 
-                            orient=orient, pix_per_cell=pix_per_cell, 
+                            spatial_size=spatial_size, hist_bins=histogram_bins, 
+                            orient=orientations, pix_per_cell=pix_per_cell, 
                             cell_per_block=cell_per_block, 
-                            hog_channel=hog_channel, spatial_feat=spatial_feat, 
-                            hist_feat=hist_feat, hog_feat=hog_feat)
+                            hog_channel=hog_channels, spatial_feat=spatial_features, 
+                            hist_feat=histogram_features, hog_feat=hog_features)
         #5) Scale extracted features to be fed to classifier
         test_features = scaler.transform(np.array(features).reshape(1, -1))
         #6) Predict using your classifier
@@ -296,7 +295,9 @@ def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
     # Return the image copy with boxes drawn
     return imcopy
 
-def hot_boxes(image, windows, svc, X_scaler):
+def hot_boxes(image, svc, scaler, color_space, spatial_size, 
+    histogram_bins, orientations, pix_per_cell, cell_per_block, hog_channels,
+    spatial_features, histogram_features, hog_features):
     """Applies sliding windows to images
     and finds hot windows. Also returns image with all hot boxes are drawn
     Args:
@@ -312,7 +313,7 @@ def hot_boxes(image, windows, svc, X_scaler):
 
     sw_y_limits = [[400, 640], [400, 600], [390, 540]]
 
-    sw_window_size = [(128, 128), (96, 96), (80, 80)]
+    sw_window_size = [(150, 150), (100, 100), (80, 80)]
 
     sw_overlap = [(0.5, 0.5),(0.5, 0.5),(0.5, 0.5)]
     
@@ -327,15 +328,11 @@ def hot_boxes(image, windows, svc, X_scaler):
             xy_overlap=overlap
         )
 
-        hot_windows = search_windows(image, windows, svc, X_scaler)
-         # color_space=color_space, 
-         #                    spatial_size=spatial_size, hist_bins=hist_bins, 
-         #                    orient=orient, pix_per_cell=pix_per_cell, 
-         #                    cell_per_block=cell_per_block, 
-         #                    hog_channel=hog_channel, spatial_feat=spatial_feat, 
-         #                    hist_feat=hist_feat, hog_feat=hog_feat)                       
+        hot_windows = search_windows(image, windows, svc, scaler, color_space, spatial_size, 
+    histogram_bins, orientations, pix_per_cell, cell_per_block, hog_channels,
+    spatial_features, histogram_features, hog_features)                      
         
-        all_hot_windows.extend (hot_windows)
+        all_hot_windows.extend(hot_windows)
 
         dst = draw_boxes(dst, hot_windows, color=(0, 0, 1), thick=4)
 
